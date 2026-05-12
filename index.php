@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AdminNexus — Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link rel="stylesheet" href="css/style.css" />
+</head>
+
+<body>
+
+    <?php include 'layout/sidebar.php'; ?>
+
+    <!-- OVERLAY (mobile) -->
+    <div class="overlay" id="overlay"></div>
+
+    <!-- MAIN WRAPPER -->
+    <div class="main-wrapper" id="mainWrapper">
+
+        <!-- NAVBAR -->
+        <header class="navbar">
+            <div class="navbar-left">
+                <button class="btn-toggle" id="sidebarToggle" aria-label="Toggle Sidebar">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+                <div class="breadcrumb">
+                    <span class="breadcrumb-root">AdminNexus</span>
+                    <i class="fa-solid fa-chevron-right"></i>
+                    <span class="breadcrumb-current" id="breadcrumbCurrent">Dashboard</span>
+                </div>
+            </div>
+
+            <div class="navbar-center">
+                <div class="search-bar">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" placeholder="Cari user, transaksi, laporan…" id="searchInput" />
+                    <kbd>⌘K</kbd>
+                </div>
+            </div>
+
+            <div class="navbar-right">
+                <button class="icon-btn" title="Notifikasi" id="notifBtn">
+                    <i class="fa-solid fa-bell"></i>
+                    <span class="badge-dot"></span>
+                </button>
+                <button class="icon-btn" title="Mode Gelap" id="themeToggle">
+                    <i class="fa-solid fa-moon"></i>
+                </button>
+
+                <div class="profile-dropdown" id="profileDropdown">
+                    <button class="profile-trigger" id="profileTrigger">
+                        <div class="user-avatar">AW</div>
+                        <span class="profile-name">Arya Wijaya</span>
+                        <i class="fa-solid fa-chevron-down"></i>
+                    </button>
+                    <div class="dropdown-menu" id="dropdownMenu">
+                        <div class="dropdown-header">
+                            <div class="user-avatar">AW</div>
+                            <div>
+                                <p>Arya Wijaya</p>
+                                <small>arya@nexus.id</small>
+                            </div>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <a href="#" class="dropdown-item"><i class="fa-solid fa-user"></i> Profil Saya</a>
+                        <a href="#" class="dropdown-item"><i class="fa-solid fa-gear"></i> Pengaturan</a>
+                        <a href="#" class="dropdown-item"><i class="fa-solid fa-shield-halved"></i> Keamanan</a>
+                        <div class="dropdown-divider"></div>
+                        <a href="#" class="dropdown-item danger"><i class="fa-solid fa-arrow-right-from-bracket"></i>
+                            Keluar</a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- CONTENT AREA -->
+        <main class="content" id="contentArea">
+
+            <!-- PAGE: DASHBOARD -->
+            <section class="page active" id="page-dashboard">
+                <div class="page-header">
+                    <div>
+                        <h1 class="page-title">Dashboard</h1>
+                        <p class="page-subtitle">Selamat datang kembali, Arya 👋</p>
+                    </div>
+                    <div class="page-actions">
+                        <button class="btn btn-outline"><i class="fa-solid fa-download"></i> Export</button>
+                        <button class="btn btn-primary"><i class="fa-solid fa-plus"></i> Tambah Data</button>
+                    </div>
+                </div>
+
+                <!-- STAT CARDS -->
+                <div class="stats-grid">
+                    <div class="stat-card" style="--card-accent: #10b981">
+                        <div class="stat-icon" style="background: rgba(16,185,129,0.12); color:#10b981">
+                            <i class="fa-solid fa-users"></i>
+                        </div>
+                        <div class="stat-body">
+                            <span class="stat-label">Total User</span>
+                            <span class="stat-value" data-target="1234">0</span>
+                            <span class="stat-change positive"><i class="fa-solid fa-arrow-trend-up"></i> +12% bulan
+                                ini</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card" style="--card-accent: #10b981">
+                        <div class="stat-icon" style="background: rgba(16,185,129,0.12); color:#10b981">
+                            <i class="fa-solid fa-sack-dollar"></i>
+                        </div>
+                        <div class="stat-body">
+                            <span class="stat-label">Pendapatan</span>
+                            <span class="stat-value" data-target="234567" data-prefix="Rp ">0</span>
+                            <span class="stat-change positive"><i class="fa-solid fa-arrow-trend-up"></i> +18% bulan
+                                ini</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card" style="--card-accent: #f59e0b">
+                        <div class="stat-icon" style="background: rgba(245,158,11,0.12); color:#f59e0b">
+                            <i class="fa-solid fa-cart-shopping"></i>
+                        </div>
+                        <div class="stat-body">
+                            <span class="stat-label">Transaksi</span>
+                            <span class="stat-value" data-target="456">0</span>
+                            <span class="stat-change positive"><i class="fa-solid fa-arrow-trend-up"></i> +8% bulan
+                                ini</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card" style="--card-accent: #ef4444">
+                        <div class="stat-icon" style="background: rgba(239,68,68,0.12); color:#ef4444">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                        </div>
+                        <div class="stat-body">
+                            <span class="stat-label">Tiket Masalah</span>
+                            <span class="stat-value" data-target="89">0</span>
+                            <span class="stat-change negative"><i class="fa-solid fa-arrow-trend-down"></i> -3% bulan
+                                ini</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CHART + ACTIVITY -->
+                <div class="dashboard-grid">
+                    <div class="card chart-card">
+                        <div class="card-header">
+                            <h3>Tren Pendapatan</h3>
+                            <div class="chart-tabs">
+                                <button class="chart-tab active">6 Bulan</button>
+                                <button class="chart-tab">1 Tahun</button>
+                            </div>
+                        </div>
+                        <div class="chart-wrapper">
+                            <canvas id="revenueChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="card activity-card">
+                        <div class="card-header">
+                            <h3>Aktivitas Terbaru</h3>
+                            <a href="#" class="link-sm">Lihat Semua</a>
+                        </div>
+                        <ul class="activity-list">
+                            <li class="activity-item">
+                                <div class="activity-avatar" style="background:#10b981">BU</div>
+                                <div class="activity-info">
+                                    <span class="activity-name">Budi Santoso</span>
+                                    <span class="activity-desc">Melakukan pembelian senilai <strong>Rp
+                                            1.250.000</strong></span>
+                                </div>
+                                <span class="activity-time">2m lalu</span>
+                            </li>
+                            <li class="activity-item">
+                                <div class="activity-avatar" style="background:#10b981">SR</div>
+                                <div class="activity-info">
+                                    <span class="activity-name">Sari Rahayu</span>
+                                    <span class="activity-desc">Mendaftar sebagai pengguna baru</span>
+                                </div>
+                                <span class="activity-time">15m lalu</span>
+                            </li>
+                            <li class="activity-item">
+                                <div class="activity-avatar" style="background:#f59e0b">DJ</div>
+                                <div class="activity-info">
+                                    <span class="activity-name">Dian Jaya</span>
+                                    <span class="activity-desc">Mengajukan tiket dukungan #4821</span>
+                                </div>
+                                <span class="activity-time">1j lalu</span>
+                            </li>
+                            <li class="activity-item">
+                                <div class="activity-avatar" style="background:#8b5cf6">MP</div>
+                                <div class="activity-info">
+                                    <span class="activity-name">Maya Putri</span>
+                                    <span class="activity-desc">Memperbarui profil akun</span>
+                                </div>
+                                <span class="activity-time">3j lalu</span>
+                            </li>
+                            <li class="activity-item">
+                                <div class="activity-avatar" style="background:#ef4444">RH</div>
+                                <div class="activity-info">
+                                    <span class="activity-name">Rizky Hadi</span>
+                                    <span class="activity-desc">Pembayaran berhasil diverifikasi</span>
+                                </div>
+                                <span class="activity-time">5j lalu</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- DATA TABLE -->
+                <div class="card table-card">
+                    <div class="card-header">
+                        <h3>Transaksi Terkini</h3>
+                        <div class="table-controls">
+                            <div class="search-mini">
+                                <i class="fa-solid fa-magnifying-glass"></i>
+                                <input type="text" placeholder="Cari transaksi…" id="tableSearch" />
+                            </div>
+                            <select class="select-sm">
+                                <option>Semua Status</option>
+                                <option>Berhasil</option>
+                                <option>Pending</option>
+                                <option>Gagal</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="table-wrapper">
+                        <table class="data-table" id="transactionTable">
+                            <thead>
+                                <tr>
+                                    <th><input type="checkbox" id="checkAll" /></th>
+                                    <th class="sortable" data-col="0">ID Trans <i class="fa-solid fa-sort"></i></th>
+                                    <th class="sortable" data-col="1">Pengguna <i class="fa-solid fa-sort"></i></th>
+                                    <th class="sortable" data-col="2">Produk <i class="fa-solid fa-sort"></i></th>
+                                    <th class="sortable" data-col="3">Jumlah <i class="fa-solid fa-sort"></i></th>
+                                    <th class="sortable" data-col="4">Status <i class="fa-solid fa-sort"></i></th>
+                                    <th class="sortable" data-col="5">Tanggal <i class="fa-solid fa-sort"></i></th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableBody">
+                                <!-- JS akan mengisi ini -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="table-footer">
+                        <span class="table-info" id="tableInfo">Menampilkan 1–10 dari 50 data</span>
+                        <div class="pagination" id="pagination"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PAGE: USERS -->
+            <section class="page" id="page-users">
+                <div class="page-header">
+                    <div>
+                        <h1 class="page-title">Data User</h1>
+                        <p class="page-subtitle">Kelola seluruh pengguna sistem</p>
+                    </div>
+                    <button class="btn btn-primary"><i class="fa-solid fa-user-plus"></i> Tambah User</button>
+                </div>
+                <div class="card" style="padding:2rem;text-align:center;color:var(--text-muted)">
+                    <i class="fa-solid fa-users" style="font-size:3rem;margin-bottom:1rem;opacity:.3"></i>
+                    <p>Halaman Data User — Konten dapat dikembangkan di sini.</p>
+                </div>
+            </section>
+
+            <!-- PAGE: REPORTS -->
+            <section class="page" id="page-reports">
+                <div class="page-header">
+                    <div>
+                        <h1 class="page-title">Laporan</h1>
+                        <p class="page-subtitle">Ringkasan dan analitik bisnis</p>
+                    </div>
+                </div>
+                <div class="card" style="padding:2rem;text-align:center;color:var(--text-muted)">
+                    <i class="fa-solid fa-chart-line" style="font-size:3rem;margin-bottom:1rem;opacity:.3"></i>
+                    <p>Halaman Laporan — Konten dapat dikembangkan di sini.</p>
+                </div>
+            </section>
+
+            <!-- PAGE: SETTINGS -->
+            <section class="page" id="page-settings">
+                <div class="page-header">
+                    <div>
+                        <h1 class="page-title">Pengaturan</h1>
+                        <p class="page-subtitle">Konfigurasi sistem dan akun</p>
+                    </div>
+                </div>
+                <div class="card" style="padding:2rem;text-align:center;color:var(--text-muted)">
+                    <i class="fa-solid fa-sliders" style="font-size:3rem;margin-bottom:1rem;opacity:.3"></i>
+                    <p>Halaman Pengaturan — Konten dapat dikembangkan di sini.</p>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+    <script src="js/script.js"></script>
+</body>
+
+</html>

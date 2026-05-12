@@ -1,0 +1,16 @@
+# Database proof of payments
+bukti/*
+!bukti/.gitkeep
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+Thumbs.db
+Desktop.ini
+
+# Logs
+*.log

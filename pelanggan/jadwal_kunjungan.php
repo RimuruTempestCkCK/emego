@@ -27,6 +27,7 @@ $stmtBookings = $pdo->prepare("
     SELECT tanggal_kunjungan, shift, jam, status
     FROM kunjungan
     WHERE MONTH(tanggal_kunjungan) = ? AND YEAR(tanggal_kunjungan) = ?
+    AND status != 'rejected'
     ORDER BY tanggal_kunjungan ASC
 ");
 $stmtBookings->execute([$month, $year]);

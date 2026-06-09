@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jun 09, 2026 at 06:22 AM
+-- Generation Time: Jun 09, 2026 at 11:27 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -37,6 +37,7 @@ CREATE TABLE `kunjungan` (
   `jumlah_orang` int(11) DEFAULT 1,
   `tujuan` varchar(255) NOT NULL,
   `status` enum('pending','approved','rejected') DEFAULT 'pending',
+  `kehadiran` enum('hadir','tidak_hadir') DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -44,24 +45,25 @@ CREATE TABLE `kunjungan` (
 -- Dumping data for table `kunjungan`
 --
 
-INSERT INTO `kunjungan` (`id`, `nama_pengunjung`, `email`, `tanggal_kunjungan`, `shift`, `jam`, `jumlah_orang`, `tujuan`, `status`, `created_at`) VALUES
-(1, 'Ahmad Rahman', 'ahmad@example.com', '2026-04-20', 'pagi', '09:00', 1, 'Meeting dengan tim IT', 'approved', '2026-04-16 12:05:20'),
-(2, 'Siti Nurhaliza', 'siti@example.com', '2026-04-22', 'pagi', '09:00', 1, 'Kunjungan bisnis', 'approved', '2026-04-16 12:05:20'),
-(3, 'Budi Santoso', 'budi@example.com', '2026-04-18', 'pagi', '09:00', 1, 'Audit keuangan', 'approved', '2026-04-16 12:05:20'),
-(4, 'Maya Sari', 'maya@example.com', '2026-04-25', 'pagi', '09:00', 1, 'Presentasi produk', 'rejected', '2026-04-16 12:05:20'),
-(5, 'Rizky Pratama', 'rizky@example.com', '2026-04-28', 'pagi', '09:00', 1, 'Training karyawan', 'approved', '2026-04-16 12:05:20'),
-(6, 'asdasdsd', 'asdasd@asdss.com', '2026-06-05', 'pagi', '08:00', 12, 'Training/workshop', 'approved', '2026-05-06 19:48:36'),
-(7, 'AAAAAAAAAA', 'aaa@aaa.com', '2026-06-04', 'siang', '15:00', 45, 'Diskusi kerjasama bisnis', 'approved', '2026-05-06 19:52:56'),
-(8, 'Andi Saputra', 'andi@gmail.com', '2026-05-01', 'pagi', '08:00', 2, 'Survey lokasi', 'approved', '2026-06-09 04:19:01'),
-(9, 'Rina Marlina', 'rina@gmail.com', '2026-05-02', 'siang', '13:00', 5, 'Pelatihan hidroponik', 'approved', '2026-06-09 04:19:01'),
-(10, 'Dedi Setiawan', 'dedi@gmail.com', '2026-05-03', 'pagi', '09:00', 1, 'Konsultasi bisnis', 'pending', '2026-06-09 04:19:01'),
-(11, 'Siska Wulandari', 'siska@gmail.com', '2026-05-04', 'siang', '14:00', 4, 'Kunjungan edukasi', 'approved', '2026-06-09 04:19:01'),
-(12, 'Fajar Nugraha', 'fajar@gmail.com', '2026-05-05', 'pagi', '10:00', 2, 'Pembelian produk', 'approved', '2026-06-09 04:19:01'),
-(13, 'Rizal Hidayat', 'rizal@gmail.com', '2026-05-06', 'siang', '15:00', 8, 'Workshop hidroponik', 'approved', '2026-06-09 04:19:01'),
-(14, 'Teguh Prakoso', 'teguh@gmail.com', '2026-05-07', 'pagi', '08:30', 3, 'Kerjasama bisnis', 'pending', '2026-06-09 04:19:01'),
-(15, 'Fitri Handayani', 'fitri@gmail.com', '2026-05-08', 'siang', '14:30', 7, 'Kunjungan umum', 'approved', '2026-06-09 04:19:01'),
-(16, 'Yuni Kartika', 'yuni@gmail.com', '2026-05-09', 'pagi', '09:30', 2, 'Belajar hidroponik', 'rejected', '2026-06-09 04:19:01'),
-(17, 'Bayu Firmansyah', 'bayu@gmail.com', '2026-05-10', 'siang', '13:30', 5, 'Observasi usaha', 'approved', '2026-06-09 04:19:01');
+INSERT INTO `kunjungan` (`id`, `nama_pengunjung`, `email`, `tanggal_kunjungan`, `shift`, `jam`, `jumlah_orang`, `tujuan`, `status`, `kehadiran`, `created_at`) VALUES
+(1, 'Ahmad Rahman', 'ahmad@example.com', '2026-04-20', 'pagi', '09:00', 1, 'Meeting dengan tim IT', 'approved', 'tidak_hadir', '2026-04-16 12:05:20'),
+(2, 'Siti Nurhaliza', 'siti@example.com', '2026-04-22', 'pagi', '09:00', 1, 'Kunjungan bisnis', 'approved', 'tidak_hadir', '2026-04-16 12:05:20'),
+(3, 'Budi Santoso', 'budi@example.com', '2026-04-18', 'pagi', '09:00', 1, 'Audit keuangan', 'approved', 'hadir', '2026-04-16 12:05:20'),
+(4, 'Maya Sari', 'maya@example.com', '2026-04-25', 'pagi', '09:00', 1, 'Presentasi produk', 'rejected', 'hadir', '2026-04-16 12:05:20'),
+(5, 'Rizky Pratama', 'rizky@example.com', '2026-04-28', 'pagi', '09:00', 1, 'Training karyawan', 'approved', 'tidak_hadir', '2026-04-16 12:05:20'),
+(6, 'asdasdsd', 'asdasd@asdss.com', '2026-06-05', 'pagi', '08:00', 12, 'Training/workshop', 'approved', 'hadir', '2026-05-06 19:48:36'),
+(7, 'AAAAAAAAAA', 'aaa@aaa.com', '2026-06-04', 'siang', '15:00', 45, 'Diskusi kerjasama bisnis', 'approved', 'tidak_hadir', '2026-05-06 19:52:56'),
+(8, 'Andi Saputra', 'andi@gmail.com', '2026-05-01', 'pagi', '08:00', 2, 'Survey lokasi', 'approved', 'hadir', '2026-06-09 04:19:01'),
+(9, 'Rina Marlina', 'rina@gmail.com', '2026-05-02', 'siang', '13:00', 5, 'Pelatihan hidroponik', 'approved', 'hadir', '2026-06-09 04:19:01'),
+(10, 'Dedi Setiawan', 'dedi@gmail.com', '2026-05-03', 'pagi', '09:00', 1, 'Konsultasi bisnis', 'pending', 'tidak_hadir', '2026-06-09 04:19:01'),
+(11, 'Siska Wulandari', 'siska@gmail.com', '2026-05-04', 'siang', '14:00', 4, 'Kunjungan edukasi', 'approved', 'tidak_hadir', '2026-06-09 04:19:01'),
+(12, 'Fajar Nugraha', 'fajar@gmail.com', '2026-05-05', 'pagi', '10:00', 2, 'Pembelian produk', 'approved', 'tidak_hadir', '2026-06-09 04:19:01'),
+(13, 'Rizal Hidayat', 'rizal@gmail.com', '2026-05-06', 'siang', '15:00', 8, 'Workshop hidroponik', 'approved', 'tidak_hadir', '2026-06-09 04:19:01'),
+(14, 'Teguh Prakoso', 'teguh@gmail.com', '2026-05-07', 'pagi', '08:30', 3, 'Kerjasama bisnis', 'pending', 'hadir', '2026-06-09 04:19:01'),
+(15, 'Fitri Handayani', 'fitri@gmail.com', '2026-05-08', 'siang', '14:30', 7, 'Kunjungan umum', 'approved', 'hadir', '2026-06-09 04:19:01'),
+(16, 'Yuni Kartika', 'yuni@gmail.com', '2026-05-09', 'pagi', '09:30', 2, 'Belajar hidroponik', 'rejected', 'hadir', '2026-06-09 04:19:01'),
+(17, 'Bayu Firmansyah', 'bayu@gmail.com', '2026-05-10', 'siang', '13:30', 5, 'Observasi usaha', 'approved', 'hadir', '2026-06-09 04:19:01'),
+(18, 'asdasd', 'firdinaljuliandre9@gmail.com', '2026-06-09', 'siang', '16:00', 14, 'Melihat fasilitas hydroponik', 'rejected', 'hadir', '2026-06-09 08:43:35');
 
 -- --------------------------------------------------------
 
@@ -323,7 +325,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `kunjungan`
 --
 ALTER TABLE `kunjungan`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
 
 --
 -- AUTO_INCREMENT for table `produk`

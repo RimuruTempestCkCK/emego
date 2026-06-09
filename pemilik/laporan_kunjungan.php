@@ -10,8 +10,9 @@ if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'pemilik') {
 $search      = trim($_GET['q'] ?? '');
 $tglMulai    = $_GET['tgl_mulai'] ?? '';
 $tglAkhir    = $_GET['tgl_akhir'] ?? '';
-$bulanFilter = $_GET['bulan'] ?? '';   // format: YYYY-MM
-$statusFilter = $_GET['status'] ?? ''; // pending | approved | rejected
+$bulanFilter = $_GET['bulan'] ?? '';      // format: YYYY-MM
+$statusFilter = $_GET['status'] ?? '';    // pending | approved | rejected
+$kehadiranFilter = $_GET['kehadiran'] ?? ''; // hadir | tidak_hadir | belum
 $page        = max(1, (int) ($_GET['page'] ?? 1));
 $limit       = 15;
 $offset      = ($page - 1) * $limit;
@@ -29,6 +30,15 @@ if ($search !== '') {
 if ($statusFilter !== '') {
     $where .= " AND k.status = ?";
     $params[] = $statusFilter;
+}
+
+if ($kehadiranFilter !== '') {
+    if ($kehadiranFilter === 'belum') {
+        $where .= " AND k.kehadiran IS NULL AND k.status = 'approved'";
+    } else {
+        $where .= " AND k.kehadiran = ?";
+        $params[] = $kehadiranFilter;
+    }
 }
 
 if ($bulanFilter !== '') {
@@ -54,7 +64,7 @@ $totalPage = (int) ceil($total / $limit);
 // ── DATA TABEL ────────────────────────────────────────────────
 $dataStmt = $pdo->prepare("
     SELECT k.id, k.nama_pengunjung, k.email, k.tanggal_kunjungan,
-           k.shift, k.jam, k.jumlah_orang, k.tujuan, k.status, k.created_at
+           k.shift, k.jam, k.jumlah_orang, k.tujuan, k.status, k.kehadiran, k.created_at
     FROM kunjungan k
     $where
     ORDER BY k.tanggal_kunjungan DESC, k.created_at DESC
@@ -71,7 +81,9 @@ $sumStmt = $pdo->prepare("
         COALESCE(AVG(k.jumlah_orang), 0)               AS rata_rata_orang,
         SUM(k.status = 'approved')                     AS jumlah_approved,
         SUM(k.status = 'pending')                      AS jumlah_pending,
-        SUM(k.status = 'rejected')                     AS jumlah_rejected
+        SUM(k.status = 'rejected')                     AS jumlah_rejected,
+        SUM(k.kehadiran = 'hadir')                     AS jumlah_hadir,
+        SUM(k.kehadiran = 'tidak_hadir')               AS jumlah_tidak_hadir
     FROM kunjungan k
     $where
 ");
@@ -141,6 +153,18 @@ function shiftBadge(string $shift): string
         'siang' => '<span style="padding:.2rem .55rem;border-radius:20px;font-size:.72rem;font-weight:600;background:rgba(245,158,11,.12);color:#f59e0b">☀️ Siang</span>',
         default => htmlspecialchars($shift),
     };
+}
+
+function kehadiranBadge(?string $kehadiran, string $status): string
+{
+    if ($status !== 'approved') return '<span style="color:var(--text-muted);font-size:.7rem;font-style:italic">N/A</span>';
+    
+    if ($kehadiran === 'hadir') {
+        return '<span style="display:inline-flex;align-items:center;gap:.3rem;padding:.25rem .65rem;border-radius:20px;font-size:.74rem;font-weight:600;background:rgba(16,185,129,.12);color:#10b981"><i class="fa-solid fa-user-check" style="font-size:.65rem"></i>Hadir</span>';
+    } elseif ($kehadiran === 'tidak_hadir') {
+        return '<span style="display:inline-flex;align-items:center;gap:.3rem;padding:.25rem .65rem;border-radius:20px;font-size:.74rem;font-weight:600;background:rgba(239,68,68,.12);color:#ef4444"><i class="fa-solid fa-user-xmark" style="font-size:.65rem"></i>Tidak Hadir</span>';
+    }
+    return '<span style="display:inline-flex;align-items:center;gap:.3rem;padding:.25rem .65rem;border-radius:20px;font-size:.74rem;font-weight:600;background:rgba(100,116,139,.12);color:#64748b"><i class="fa-solid fa-clock-rotate-left" style="font-size:.65rem"></i>Belum Absen</span>';
 }
 ?>
 <!DOCTYPE html>
@@ -381,7 +405,7 @@ function shiftBadge(string $shift): string
                 <div class="breadcrumb">
                     <span class="breadcrumb-root">E-MEGO</span>
                     <i class="fa-solid fa-chevron-right"></i>
-                    <span class="breadcrumb-current">Laporan Kunjungan</span>
+                    <span class="breadcrumb-current">Laporan Kunjungan (Pimpinan)</span>
                 </div>
             </div>
             <div class="navbar-center"></div>
@@ -391,15 +415,15 @@ function shiftBadge(string $shift): string
                 </button>
                 <div class="profile-dropdown" id="profileDropdown">
                     <button class="profile-trigger" id="profileTrigger">
-                        <div class="user-avatar"><?= initials($_SESSION['user_name'] ?? 'AD') ?></div>
-                        <span class="profile-name"><?= htmlspecialchars($_SESSION['user_name'] ?? 'Admin') ?></span>
+                        <div class="user-avatar"><?= initials($_SESSION['user_name'] ?? 'P') ?></div>
+                        <span class="profile-name"><?= htmlspecialchars($_SESSION['user_name'] ?? 'Pimpinan') ?></span>
                         <i class="fa-solid fa-chevron-down"></i>
                     </button>
                     <div class="dropdown-menu" id="dropdownMenu">
                         <div class="dropdown-header">
-                            <div class="user-avatar"><?= initials($_SESSION['user_name'] ?? 'AD') ?></div>
+                            <div class="user-avatar"><?= initials($_SESSION['user_name'] ?? 'P') ?></div>
                             <div>
-                                <p><?= htmlspecialchars($_SESSION['user_name'] ?? 'Admin') ?></p>
+                                <p><?= htmlspecialchars($_SESSION['user_name'] ?? 'Pimpinan') ?></p>
                                 <small><?= htmlspecialchars($_SESSION['user_email'] ?? '') ?></small>
                             </div>
                         </div>
@@ -446,7 +470,7 @@ function shiftBadge(string $shift): string
                                     LAPORAN KUNJUNGAN</p>
                                 <p style="margin:3pt 0 0;font-size:8.5pt;color:#6b7280">
                                     Dicetak oleh:
-                                    <strong><?= htmlspecialchars($_SESSION['user_name'] ?? 'Admin') ?></strong>
+                                    <strong><?= htmlspecialchars($_SESSION['user_name'] ?? 'Pimpinan') ?></strong>
                                 </p>
                                 <p style="margin:2pt 0 0;font-size:8.5pt;color:#6b7280">
                                     Tanggal cetak: <strong><?= date('d F Y, H:i') ?> WIB</strong>
@@ -515,6 +539,24 @@ function shiftBadge(string $shift): string
                         </div>
                     </div>
                     <div class="card stat-card">
+                        <div class="stat-icon" style="background:rgba(16,185,129,.12)">
+                            <i class="fa-solid fa-user-check" style="color:#10b981"></i>
+                        </div>
+                        <div>
+                            <p class="stat-label">Hadir</p>
+                            <p class="stat-value" style="color:#10b981"><?= number_format((int) $ringkasan['jumlah_hadir']) ?></p>
+                        </div>
+                    </div>
+                    <div class="card stat-card">
+                        <div class="stat-icon" style="background:rgba(239,68,68,.12)">
+                            <i class="fa-solid fa-user-xmark" style="color:#ef4444"></i>
+                        </div>
+                        <div>
+                            <p class="stat-label">Tidak Hadir</p>
+                            <p class="stat-value" style="color:#ef4444"><?= number_format((int) $ringkasan['jumlah_tidak_hadir']) ?></p>
+                        </div>
+                    </div>
+                    <div class="card stat-card">
                         <div class="stat-icon" style="background:rgba(245,158,11,.12)">
                             <i class="fa-solid fa-circle-check" style="color:#f59e0b"></i>
                         </div>
@@ -530,24 +572,6 @@ function shiftBadge(string $shift): string
                         <div>
                             <p class="stat-label">Pending</p>
                             <p class="stat-value" style="color:#f59e0b"><?= number_format((int) $ringkasan['jumlah_pending']) ?></p>
-                        </div>
-                    </div>
-                    <div class="card stat-card">
-                        <div class="stat-icon" style="background:rgba(239,68,68,.12)">
-                            <i class="fa-solid fa-circle-xmark" style="color:#ef4444"></i>
-                        </div>
-                        <div>
-                            <p class="stat-label">Ditolak</p>
-                            <p class="stat-value" style="color:#ef4444"><?= number_format((int) $ringkasan['jumlah_rejected']) ?></p>
-                        </div>
-                    </div>
-                    <div class="card stat-card">
-                        <div class="stat-icon" style="background:rgba(139,92,246,.12)">
-                            <i class="fa-solid fa-person" style="color:#8b5cf6"></i>
-                        </div>
-                        <div>
-                            <p class="stat-label">Rata-rata / Kunjungan</p>
-                            <p class="stat-value"><?= number_format((float) $ringkasan['rata_rata_orang'], 1) ?> org</p>
                         </div>
                     </div>
                 </div>
@@ -632,6 +656,16 @@ function shiftBadge(string $shift): string
                                 </select>
                             </div>
                             <div class="filter-group">
+                                <label>Kehadiran</label>
+                                <select class="select-sm" name="kehadiran" onchange="this.form.submit()"
+                                    style="min-width:140px">
+                                    <option value="">Semua Kehadiran</option>
+                                    <option value="hadir" <?= $kehadiranFilter === 'hadir' ? 'selected' : '' ?>>Hadir</option>
+                                    <option value="tidak_hadir" <?= $kehadiranFilter === 'tidak_hadir' ? 'selected' : '' ?>>Tidak Hadir</option>
+                                    <option value="belum" <?= $kehadiranFilter === 'belum' ? 'selected' : '' ?>>Belum Absen</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
                                 <label>Filter Bulan</label>
                                 <select class="select-sm" name="bulan" onchange="this.form.submit()"
                                     style="min-width:160px">
@@ -689,13 +723,14 @@ function shiftBadge(string $shift): string
                                     <th>Shift / Jam</th>
                                     <th>Jml. Orang</th>
                                     <th>Status</th>
+                                    <th>Kehadiran</th>
                                     <th>Tgl. Daftar</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php if (empty($kunjungan)): ?>
                                     <tr>
-                                        <td colspan="8"
+                                        <td colspan="9"
                                             style="text-align:center;padding:2.5rem;color:var(--text-muted)">
                                             <i class="fa-solid fa-calendar-xmark"
                                                 style="font-size:2rem;margin-bottom:.5rem;display:block;opacity:.3"></i>
@@ -737,6 +772,7 @@ function shiftBadge(string $shift): string
                                                 <span style="font-size:.72rem;color:var(--text-muted);display:block">orang</span>
                                             </td>
                                             <td><?= statusBadge($k['status']) ?></td>
+                                            <td><?= kehadiranBadge($k['kehadiran'], $k['status']) ?></td>
                                             <td style="font-size:.82rem;color:var(--text-muted)">
                                                 <?= date('d M Y', strtotime($k['created_at'])) ?>
                                                 <span
@@ -770,9 +806,9 @@ function shiftBadge(string $shift): string
                                     <div style="height:42pt"></div>
                                     <div style="border-top:1px solid #374151;padding-top:4pt">
                                         <p style="margin:0;font-size:9pt;font-weight:700">
-                                            <?= htmlspecialchars($_SESSION['user_name'] ?? 'Admin') ?>
+                                            Admin E-Mego
                                         </p>
-                                        <p style="margin:0;font-size:8pt;color:#6b7280">Admin E-Mego</p>
+                                        <p style="margin:0;font-size:8pt;color:#6b7280">Petugas Lapangan</p>
                                     </div>
                                 </td>
                                 <td style="width:33%;text-align:center;vertical-align:top;padding:0 10pt">
@@ -787,7 +823,9 @@ function shiftBadge(string $shift): string
                                     <p style="margin:0;font-size:8.5pt;color:#6b7280">Disetujui oleh,</p>
                                     <div style="height:42pt"></div>
                                     <div style="border-top:1px solid #374151;padding-top:4pt">
-                                        <p style="margin:0;font-size:9pt;font-weight:700">(.............................)</p>
+                                        <p style="margin:0;font-size:9pt;font-weight:700">
+                                            <?= htmlspecialchars($_SESSION['user_name'] ?? 'Pimpinan') ?>
+                                        </p>
                                         <p style="margin:0;font-size:8pt;color:#6b7280">Pemilik / Direktur</p>
                                     </div>
                                 </td>
@@ -808,19 +846,19 @@ function shiftBadge(string $shift): string
                             </span>
                             <div class="pagination">
                                 <?php if ($page > 1): ?>
-                                    <a href="?page=<?= $page - 1 ?>&q=<?= urlencode($search) ?>&status=<?= urlencode($statusFilter) ?>&bulan=<?= urlencode($bulanFilter) ?>&tgl_mulai=<?= urlencode($tglMulai) ?>&tgl_akhir=<?= urlencode($tglAkhir) ?>"
+                                    <a href="?page=<?= $page - 1 ?>&q=<?= urlencode($search) ?>&status=<?= urlencode($statusFilter) ?>&bulan=<?= urlencode($bulanFilter) ?>&tgl_mulai=<?= urlencode($tglMulai) ?>&tgl_akhir=<?= urlencode($tglAkhir) ?>&kehadiran=<?= urlencode($kehadiranFilter) ?>"
                                         class="page-btn">
                                         <i class="fa-solid fa-chevron-left"></i>
                                     </a>
                                 <?php endif; ?>
                                 <?php for ($p = max(1, $page - 2); $p <= min($totalPage, $page + 2); $p++): ?>
-                                    <a href="?page=<?= $p ?>&q=<?= urlencode($search) ?>&status=<?= urlencode($statusFilter) ?>&bulan=<?= urlencode($bulanFilter) ?>&tgl_mulai=<?= urlencode($tglMulai) ?>&tgl_akhir=<?= urlencode($tglAkhir) ?>"
+                                    <a href="?page=<?= $p ?>&q=<?= urlencode($search) ?>&status=<?= urlencode($statusFilter) ?>&bulan=<?= urlencode($bulanFilter) ?>&tgl_mulai=<?= urlencode($tglMulai) ?>&tgl_akhir=<?= urlencode($tglAkhir) ?>&kehadiran=<?= urlencode($kehadiranFilter) ?>"
                                         class="page-btn <?= $p === $page ? 'active' : '' ?>">
                                         <?= $p ?>
                                     </a>
                                 <?php endfor; ?>
                                 <?php if ($page < $totalPage): ?>
-                                    <a href="?page=<?= $page + 1 ?>&q=<?= urlencode($search) ?>&status=<?= urlencode($statusFilter) ?>&bulan=<?= urlencode($bulanFilter) ?>&tgl_mulai=<?= urlencode($tglMulai) ?>&tgl_akhir=<?= urlencode($tglAkhir) ?>"
+                                    <a href="?page=<?= $page + 1 ?>&q=<?= urlencode($search) ?>&status=<?= urlencode($statusFilter) ?>&bulan=<?= urlencode($bulanFilter) ?>&tgl_mulai=<?= urlencode($tglMulai) ?>&tgl_akhir=<?= urlencode($tglAkhir) ?>&kehadiran=<?= urlencode($kehadiranFilter) ?>"
                                         class="page-btn">
                                         <i class="fa-solid fa-chevron-right"></i>
                                     </a>

@@ -42,6 +42,12 @@ $current = basename($_SERVER['PHP_SELF']);
                     <span>Booking Pelanggan</span>
                 </a>
 
+                <a href="../admin/kehadiran_kunjungan.php"
+                    class="nav-item <?= $current == 'kehadiran_kunjungan.php' ? 'active' : '' ?>">
+                    <i class="fa-solid fa-user-check"></i>
+                    <span>Absensi Kunjungan</span>
+                </a>
+
                 <a href="../admin/kelola_produk.php"
                     class="nav-item <?= $current == 'kelola_produk.php' ? 'active' : '' ?>">
                     <i class="fa-solid fa-box-open"></i>

@@ -1,310 +1,758 @@
+<?php
+session_start();
+
+// Jika sudah login, redirect berdasarkan role
+if (!empty($_SESSION['user_id']) && isset($_SESSION['user_role'])) {
+    $role = $_SESSION['user_role'];
+    if ($role === 'admin') {
+        header('Location: admin/dashboard.php');
+    } elseif ($role === 'pelanggan') {
+        header('Location: pelanggan/dashboard.php');
+    } elseif ($role === 'pemilik') {
+        header('Location: pemilik/dashboard.php');
+    } else {
+        // Role tidak valid, logout
+        session_unset();
+        session_destroy();
+    }
+    exit;
+}
+
+require_once __DIR__ . '/config.php';
+
+$error = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $email    = trim($_POST['email']    ?? '');
+    $password = trim($_POST['password'] ?? '');
+
+    if (empty($email) || empty($password)) {
+        $error = 'Email dan password wajib diisi.';
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $error = 'Format email tidak valid.';
+    } else {
+        // Ambil user berdasarkan email
+        $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ? LIMIT 1");
+        $stmt->execute([$email]);
+        $user = $stmt->fetch();
+
+        $loginOk = false;
+
+        if ($user) {
+            // Cek apakah password di DB adalah bcrypt hash atau plain text
+            $isHashed = (strlen($user['password']) >= 60 && str_starts_with($user['password'], '$2'));
+
+            if ($isHashed) {
+                $loginOk = password_verify($password, $user['password']);
+            } else {
+                // Plain text — untuk data lama (sebaiknya segera di-hash ulang)
+                $loginOk = ($password === $user['password']);
+            }
+        }
+
+        if ($loginOk) {
+            // Regenerate session ID untuk keamanan
+            session_regenerate_id(true);
+
+            $_SESSION['user_id']    = $user['id'];
+            $_SESSION['user_name']  = $user['name'];
+            $_SESSION['user_email'] = $user['email'];
+            $_SESSION['user_role']  = $user['role'];
+
+            // Redirect berdasarkan role
+            switch ($user['role']) {
+                case 'admin':
+                    header('Location: admin/dashboard.php');
+                    break;
+                case 'pelanggan':
+                    header('Location: pelanggan/dashboard.php');
+                    break;
+                case 'pemilik':
+                    header('Location: pemilik/dashboard.php');
+                    break;
+                default:
+                    header('Location: login.php');
+            }
+            exit;
+        } else {
+            // Pesan error generik — jangan bocorkan "email tidak ada" vs "password salah"
+            $error = 'Email atau password salah. Silakan coba lagi.';
+        }
+    }
+}
+?>
+
+
 <!DOCTYPE html>
 <html lang="id">
 
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AdminNexus — Dashboard</title>
+    <title>AdminNexus — Login</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link
         href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
         rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
     <link rel="stylesheet" href="css/style.css" />
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --bg-primary: #f1f5f9;
+            --bg-surface: #e8edf5;
+            --bg-card: #ffffff;
+            --bg-input: #f8fafc;
+            --border: rgba(0, 0, 0, 0.09);
+            --border-focus: #10b981;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-muted: #94a3b8;
+            --accent: #10b981;
+            --accent-hover: #059669;
+            --accent-glow: rgba(16, 185, 129, 0.15);
+            --danger: #ef4444;
+            --success: #10b981;
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 16px;
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: #0f1117;
+            --bg-surface: #16191f;
+            --bg-card: #1c2028;
+            --bg-input: #232830;
+            --border: rgba(255, 255, 255, 0.08);
+            --border-focus: #10b981;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent-glow: rgba(16, 185, 129, 0.25);
+        }
+
+        [data-theme="dark"] body::before {
+            background-image:
+                linear-gradient(rgba(16, 185, 129, 0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(16, 185, 129, 0.04) 1px, transparent 1px);
+        }
+
+        [data-theme="dark"] body::after {
+            background: radial-gradient(circle, rgba(16, 185, 129, 0.12) 0%, transparent 70%);
+        }
+
+        body {
+            font-family: 'Sora', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background .3s, color .3s;
+            padding: 1.5rem;
+        }
+
+        /* Animated background grid */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: none;
+            background-size: 40px 40px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Glowing orb */
+        body::after {
+            content: '';
+            position: fixed;
+            top: -200px;
+            right: -200px;
+            width: 600px;
+            height: 600px;
+            background: none;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ── THEME TOGGLE ── */
+        .theme-toggle {
+            position: fixed;
+            top: 1.25rem;
+            right: 1.25rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+            transition: all .2s;
+            z-index: 10;
+        }
+
+        .theme-toggle:hover {
+            color: var(--accent);
+            border-color: var(--accent);
+        }
+
+        /* ── CARD ── */
+        .login-wrapper {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 420px;
+        }
+
+        /* Brand header above card */
+        .brand {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .brand-logo {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 52px;
+            height: 52px;
+            border-radius: var(--radius-md);
+            background: linear-gradient(135deg, #10b981, #8b5cf6);
+            font-size: 22px;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: -1px;
+            margin-bottom: .75rem;
+            box-shadow: 0 0 30px rgba(16, 185, 129, 0.35);
+        }
+
+        .brand-name {
+            font-size: 1.35rem;
+            font-weight: 600;
+            letter-spacing: -.5px;
+        }
+
+        .brand-name span {
+            color: var(--accent);
+        }
+
+        .brand-tagline {
+            font-size: .78rem;
+            color: var(--text-muted);
+            margin-top: .25rem;
+            letter-spacing: .5px;
+            text-transform: uppercase;
+        }
+
+        /* Card itself */
+        .login-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 2rem 2rem 2.25rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+            animation: slideUp .4s cubic-bezier(.22, 1, .36, 1) both;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(24px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .card-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: .35rem;
+        }
+
+        .card-subtitle {
+            font-size: .825rem;
+            color: var(--text-muted);
+            margin-bottom: 1.75rem;
+        }
+
+        /* ── FORM ── */
+        .form-group {
+            margin-bottom: 1.15rem;
+        }
+
+        .form-label {
+            display: block;
+            font-size: .8rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: .45rem;
+            letter-spacing: .2px;
+        }
+
+        .input-wrap {
+            position: relative;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: .9rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 14px;
+            pointer-events: none;
+            transition: color .2s;
+        }
+
+        .form-input {
+            width: 100%;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            font-family: 'Sora', sans-serif;
+            font-size: .875rem;
+            padding: .7rem .9rem .7rem 2.5rem;
+            outline: none;
+            transition: border-color .2s, box-shadow .2s, background .2s;
+        }
+
+        .form-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .form-input:focus {
+            border-color: var(--border-focus);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+            background: var(--bg-surface);
+        }
+
+        .form-input:focus+.input-icon,
+        .input-wrap:focus-within .input-icon {
+            color: var(--accent);
+        }
+
+        /* Password toggle */
+        .btn-eye {
+            position: absolute;
+            right: .85rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--text-muted);
+            font-size: 14px;
+            padding: 4px;
+            transition: color .2s;
+        }
+
+        .btn-eye:hover {
+            color: var(--text-secondary);
+        }
+
+        /* Remember + Forgot */
+        .form-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+        }
+
+        .checkbox-wrap {
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+            cursor: pointer;
+        }
+
+        .checkbox-wrap input[type="checkbox"] {
+            width: 15px;
+            height: 15px;
+            accent-color: var(--accent);
+            cursor: pointer;
+        }
+
+        .checkbox-label {
+            font-size: .8rem;
+            color: var(--text-secondary);
+        }
+
+        .link-forgot {
+            font-size: .8rem;
+            color: var(--accent);
+            text-decoration: none;
+            transition: opacity .2s;
+        }
+
+        .link-forgot:hover {
+            opacity: .75;
+        }
+
+        /* ── ALERT (PHP feedback) ── */
+        .alert {
+            display: flex;
+            align-items: center;
+            gap: .6rem;
+            padding: .7rem 1rem;
+            border-radius: var(--radius-sm);
+            font-size: .8rem;
+            margin-bottom: 1.25rem;
+            animation: slideUp .3s ease both;
+        }
+
+        .alert-danger {
+            background: rgba(239, 68, 68, .1);
+            border: 1px solid rgba(239, 68, 68, .3);
+            color: #fca5a5;
+        }
+
+        .alert-success {
+            background: rgba(16, 185, 129, .1);
+            border: 1px solid rgba(16, 185, 129, .3);
+            color: #6ee7b7;
+        }
+
+        /* ── BUTTON ── */
+        .btn-login {
+            width: 100%;
+            padding: .78rem;
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-family: 'Sora', sans-serif;
+            font-size: .9rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: .5rem;
+            transition: background .2s, transform .15s, box-shadow .2s;
+            box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
+            letter-spacing: .2px;
+        }
+
+        .btn-login:hover {
+            background: var(--accent-hover);
+            box-shadow: 0 6px 28px rgba(16, 185, 129, 0.45);
+            transform: translateY(-1px);
+        }
+
+        .btn-login:active {
+            transform: scale(.98);
+        }
+
+        .btn-login:disabled {
+            opacity: .6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Loading spinner */
+        .spinner {
+            display: none;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, .4);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin .7s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* ── DIVIDER ── */
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: .75rem;
+            margin: 1.5rem 0;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        .divider span {
+            font-size: .75rem;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+
+        /* SSO / alternative login */
+        .sso-btn {
+            width: 100%;
+            padding: .65rem;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text-secondary);
+            font-family: 'Sora', sans-serif;
+            font-size: .82rem;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: .6rem;
+            transition: border-color .2s, color .2s, background .2s;
+        }
+
+        .sso-btn:hover {
+            border-color: var(--border-focus);
+            color: var(--text-primary);
+            background: var(--bg-surface);
+        }
+
+        .sso-icon {
+            width: 16px;
+            height: 16px;
+        }
+
+        /* ── FOOTER ── */
+        .login-footer {
+            text-align: center;
+            margin-top: 1.5rem;
+            font-size: .78rem;
+            color: var(--text-muted);
+        }
+
+        .login-footer a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        .login-footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* ── INPUT ERROR STATE ── */
+        .form-input.error {
+            border-color: var(--danger);
+        }
+
+        .field-error {
+            font-size: .73rem;
+            color: #fca5a5;
+            margin-top: .35rem;
+            display: none;
+        }
+
+        .field-error.show {
+            display: block;
+        }
+
+        /* ── PASSWORD STRENGTH ── */
+        .strength-bar {
+            display: flex;
+            gap: 4px;
+            margin-top: .4rem;
+        }
+
+        .strength-bar span {
+            flex: 1;
+            height: 3px;
+            border-radius: 2px;
+            background: var(--border);
+            transition: background .3s;
+        }
+
+        .strength-bar[data-level="1"] span:nth-child(1) {
+            background: var(--danger);
+        }
+
+        .strength-bar[data-level="2"] span:nth-child(-n+2) {
+            background: #f59e0b;
+        }
+
+        .strength-bar[data-level="3"] span:nth-child(-n+3) {
+            background: #10b981;
+        }
+
+        .strength-bar[data-level="4"] span {
+            background: var(--success);
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .login-card {
+                padding: 1.5rem 1.25rem 1.75rem;
+            }
+        }
+    </style>
 </head>
 
-<body>
+<body class="login-page">
 
-    <?php include 'layout/sidebar.php'; ?>
+    <!-- Theme toggle -->
+    <button class="theme-toggle" id="themeToggle" title="Mode Terang/Gelap">
+        <i class="fa-solid fa-moon" id="themeIcon"></i>
+    </button>
 
-    <!-- OVERLAY (mobile) -->
-    <div class="overlay" id="overlay"></div>
+    <div class="login-wrapper">
 
-    <!-- MAIN WRAPPER -->
-    <div class="main-wrapper" id="mainWrapper">
+        <!-- Brand -->
+        <div class="brand">
+            <div class="brand-name">E-<span>MEGO</span></div>
+            <div class="brand-tagline">Management System</div>
+        </div>
 
-        <!-- NAVBAR -->
-        <header class="navbar">
-            <div class="navbar-left">
-                <button class="btn-toggle" id="sidebarToggle" aria-label="Toggle Sidebar">
-                    <i class="fa-solid fa-bars"></i>
+        <!-- Card -->
+        <div class="login-card">
+            <h1 class="card-title">Masuk ke Dashboard</h1>
+            <p class="card-subtitle">Gunakan kredensial akun Anda untuk melanjutkan</p>
+
+
+            <form method="POST" action="" id="loginForm" novalidate>
+
+                <!-- Email -->
+                <div class="form-group">
+                    <label class="form-label" for="email">Alamat Email</label>
+                    <div class="input-wrap">
+                        <input class="form-input" type="email" id="email" name="email" placeholder="arya@nexus.id"
+                            value="<?= htmlspecialchars($_POST['email'] ?? '') ?>" autocomplete="email" autofocus />
+                        <i class="fa-solid fa-envelope input-icon"></i>
+                    </div>
+                    <span class="field-error" id="emailError">Masukkan email yang valid.</span>
+                </div>
+
+                <!-- Password -->
+                <div class="form-group">
+                    <label class="form-label" for="password">Password</label>
+                    <div class="input-wrap">
+                        <input class="form-input" type="password" id="password" name="password" placeholder="••••••••"
+                            autocomplete="current-password" />
+                        <i class="fa-solid fa-lock input-icon"></i>
+                        <button type="button" class="btn-eye" id="togglePass" title="Tampilkan Password">
+                            <i class="fa-solid fa-eye" id="eyeIcon"></i>
+                        </button>
+                    </div>
+                    <span class="field-error" id="passError">Password wajib diisi.</span>
+                </div>
+
+
+                <!-- Submit -->
+                <button type="submit" class="btn-login" id="btnLogin">
+                    <span class="spinner" id="loginSpinner"></span>
+                    <i class="fa-solid fa-right-to-bracket" id="btnIcon"></i>
+                    <span id="btnText">Masuk</span>
                 </button>
-                <div class="breadcrumb">
-                    <span class="breadcrumb-root">AdminNexus</span>
-                    <i class="fa-solid fa-chevron-right"></i>
-                    <span class="breadcrumb-current" id="breadcrumbCurrent">Dashboard</span>
-                </div>
-            </div>
 
-            <div class="navbar-center">
-                <div class="search-bar">
-                    <i class="fa-solid fa-magnifying-glass"></i>
-                    <input type="text" placeholder="Cari user, transaksi, laporan…" id="searchInput" />
-                    <kbd>⌘K</kbd>
-                </div>
-            </div>
+            </form>
 
-            <div class="navbar-right">
-                <button class="icon-btn" title="Notifikasi" id="notifBtn">
-                    <i class="fa-solid fa-bell"></i>
-                    <span class="badge-dot"></span>
-                </button>
-                <button class="icon-btn" title="Mode Gelap" id="themeToggle">
-                    <i class="fa-solid fa-moon"></i>
-                </button>
 
-                <div class="profile-dropdown" id="profileDropdown">
-                    <button class="profile-trigger" id="profileTrigger">
-                        <div class="user-avatar">AW</div>
-                        <span class="profile-name">Arya Wijaya</span>
-                        <i class="fa-solid fa-chevron-down"></i>
-                    </button>
-                    <div class="dropdown-menu" id="dropdownMenu">
-                        <div class="dropdown-header">
-                            <div class="user-avatar">AW</div>
-                            <div>
-                                <p>Arya Wijaya</p>
-                                <small>arya@nexus.id</small>
-                            </div>
-                        </div>
-                        <div class="dropdown-divider"></div>
-                        <a href="#" class="dropdown-item"><i class="fa-solid fa-user"></i> Profil Saya</a>
-                        <a href="#" class="dropdown-item"><i class="fa-solid fa-gear"></i> Pengaturan</a>
-                        <a href="#" class="dropdown-item"><i class="fa-solid fa-shield-halved"></i> Keamanan</a>
-                        <div class="dropdown-divider"></div>
-                        <a href="#" class="dropdown-item danger"><i class="fa-solid fa-arrow-right-from-bracket"></i>
-                            Keluar</a>
-                    </div>
-                </div>
-            </div>
-        </header>
+        </div><!-- /login-card -->
 
-        <!-- CONTENT AREA -->
-        <main class="content" id="contentArea">
+        <!-- Footer note -->
+        <div class="login-footer">
+            Belum punya akun? <a href="register.php">Daftar di sini</a>
+            &nbsp;·&nbsp;
+        </div>
 
-            <!-- PAGE: DASHBOARD -->
-            <section class="page active" id="page-dashboard">
-                <div class="page-header">
-                    <div>
-                        <h1 class="page-title">Dashboard</h1>
-                        <p class="page-subtitle">Selamat datang kembali, Arya 👋</p>
-                    </div>
-                    <div class="page-actions">
-                        <button class="btn btn-outline"><i class="fa-solid fa-download"></i> Export</button>
-                        <button class="btn btn-primary"><i class="fa-solid fa-plus"></i> Tambah Data</button>
-                    </div>
-                </div>
+    </div><!-- /login-wrapper -->
 
-                <!-- STAT CARDS -->
-                <div class="stats-grid">
-                    <div class="stat-card" style="--card-accent: #10b981">
-                        <div class="stat-icon" style="background: rgba(16,185,129,0.12); color:#10b981">
-                            <i class="fa-solid fa-users"></i>
-                        </div>
-                        <div class="stat-body">
-                            <span class="stat-label">Total User</span>
-                            <span class="stat-value" data-target="1234">0</span>
-                            <span class="stat-change positive"><i class="fa-solid fa-arrow-trend-up"></i> +12% bulan
-                                ini</span>
-                        </div>
-                    </div>
+    <script>
+        // ── Theme toggle ───────────────────────────────────────────
+        const root = document.documentElement;
+        const themeBtn = document.getElementById('themeToggle');
+        const themeIcon = document.getElementById('themeIcon');
+        const savedTheme = localStorage.getItem('nexus-theme') || 'dark';
 
-                    <div class="stat-card" style="--card-accent: #10b981">
-                        <div class="stat-icon" style="background: rgba(16,185,129,0.12); color:#10b981">
-                            <i class="fa-solid fa-sack-dollar"></i>
-                        </div>
-                        <div class="stat-body">
-                            <span class="stat-label">Pendapatan</span>
-                            <span class="stat-value" data-target="234567" data-prefix="Rp ">0</span>
-                            <span class="stat-change positive"><i class="fa-solid fa-arrow-trend-up"></i> +18% bulan
-                                ini</span>
-                        </div>
-                    </div>
+        function applyTheme(t) {
+            root.setAttribute('data-theme', t);
+            themeIcon.className = t === 'dark' ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
+            localStorage.setItem('nexus-theme', t);
+        }
+        applyTheme(savedTheme);
+        themeBtn.addEventListener('click', () => {
+            applyTheme(root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+        });
 
-                    <div class="stat-card" style="--card-accent: #f59e0b">
-                        <div class="stat-icon" style="background: rgba(245,158,11,0.12); color:#f59e0b">
-                            <i class="fa-solid fa-cart-shopping"></i>
-                        </div>
-                        <div class="stat-body">
-                            <span class="stat-label">Transaksi</span>
-                            <span class="stat-value" data-target="456">0</span>
-                            <span class="stat-change positive"><i class="fa-solid fa-arrow-trend-up"></i> +8% bulan
-                                ini</span>
-                        </div>
-                    </div>
+        // ── Password visibility ────────────────────────────────────
+        const passInput = document.getElementById('password');
+        const eyeIcon = document.getElementById('eyeIcon');
+        document.getElementById('togglePass').addEventListener('click', () => {
+            const isPass = passInput.type === 'password';
+            passInput.type = isPass ? 'text' : 'password';
+            eyeIcon.className = isPass ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye';
+        });
 
-                    <div class="stat-card" style="--card-accent: #ef4444">
-                        <div class="stat-icon" style="background: rgba(239,68,68,0.12); color:#ef4444">
-                            <i class="fa-solid fa-triangle-exclamation"></i>
-                        </div>
-                        <div class="stat-body">
-                            <span class="stat-label">Tiket Masalah</span>
-                            <span class="stat-value" data-target="89">0</span>
-                            <span class="stat-change negative"><i class="fa-solid fa-arrow-trend-down"></i> -3% bulan
-                                ini</span>
-                        </div>
-                    </div>
-                </div>
+        // ── Client-side validation ─────────────────────────────────
+        const form = document.getElementById('loginForm');
+        const emailInp = document.getElementById('email');
+        const emailErr = document.getElementById('emailError');
+        const passErr = document.getElementById('passError');
+        const btnLogin = document.getElementById('btnLogin');
+        const btnText = document.getElementById('btnText');
+        const btnIcon = document.getElementById('btnIcon');
+        const spinner = document.getElementById('loginSpinner');
 
-                <!-- CHART + ACTIVITY -->
-                <div class="dashboard-grid">
-                    <div class="card chart-card">
-                        <div class="card-header">
-                            <h3>Tren Pendapatan</h3>
-                            <div class="chart-tabs">
-                                <button class="chart-tab active">6 Bulan</button>
-                                <button class="chart-tab">1 Tahun</button>
-                            </div>
-                        </div>
-                        <div class="chart-wrapper">
-                            <canvas id="revenueChart"></canvas>
-                        </div>
-                    </div>
+        function validateEmail(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
 
-                    <div class="card activity-card">
-                        <div class="card-header">
-                            <h3>Aktivitas Terbaru</h3>
-                            <a href="#" class="link-sm">Lihat Semua</a>
-                        </div>
-                        <ul class="activity-list">
-                            <li class="activity-item">
-                                <div class="activity-avatar" style="background:#10b981">BU</div>
-                                <div class="activity-info">
-                                    <span class="activity-name">Budi Santoso</span>
-                                    <span class="activity-desc">Melakukan pembelian senilai <strong>Rp
-                                            1.250.000</strong></span>
-                                </div>
-                                <span class="activity-time">2m lalu</span>
-                            </li>
-                            <li class="activity-item">
-                                <div class="activity-avatar" style="background:#10b981">SR</div>
-                                <div class="activity-info">
-                                    <span class="activity-name">Sari Rahayu</span>
-                                    <span class="activity-desc">Mendaftar sebagai pengguna baru</span>
-                                </div>
-                                <span class="activity-time">15m lalu</span>
-                            </li>
-                            <li class="activity-item">
-                                <div class="activity-avatar" style="background:#f59e0b">DJ</div>
-                                <div class="activity-info">
-                                    <span class="activity-name">Dian Jaya</span>
-                                    <span class="activity-desc">Mengajukan tiket dukungan #4821</span>
-                                </div>
-                                <span class="activity-time">1j lalu</span>
-                            </li>
-                            <li class="activity-item">
-                                <div class="activity-avatar" style="background:#8b5cf6">MP</div>
-                                <div class="activity-info">
-                                    <span class="activity-name">Maya Putri</span>
-                                    <span class="activity-desc">Memperbarui profil akun</span>
-                                </div>
-                                <span class="activity-time">3j lalu</span>
-                            </li>
-                            <li class="activity-item">
-                                <div class="activity-avatar" style="background:#ef4444">RH</div>
-                                <div class="activity-info">
-                                    <span class="activity-name">Rizky Hadi</span>
-                                    <span class="activity-desc">Pembayaran berhasil diverifikasi</span>
-                                </div>
-                                <span class="activity-time">5j lalu</span>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
+        function showError(input, errEl, msg) {
+            input.classList.add('error');
+            errEl.textContent = msg;
+            errEl.classList.add('show');
+        }
+        function clearError(input, errEl) {
+            input.classList.remove('error');
+            errEl.classList.remove('show');
+        }
 
-                <!-- DATA TABLE -->
-                <div class="card table-card">
-                    <div class="card-header">
-                        <h3>Transaksi Terkini</h3>
-                        <div class="table-controls">
-                            <div class="search-mini">
-                                <i class="fa-solid fa-magnifying-glass"></i>
-                                <input type="text" placeholder="Cari transaksi…" id="tableSearch" />
-                            </div>
-                            <select class="select-sm">
-                                <option>Semua Status</option>
-                                <option>Berhasil</option>
-                                <option>Pending</option>
-                                <option>Gagal</option>
-                            </select>
-                        </div>
-                    </div>
+        emailInp.addEventListener('input', () => {
+            if (validateEmail(emailInp.value.trim())) clearError(emailInp, emailErr);
+        });
+        passInput.addEventListener('input', () => {
+            if (passInput.value.length > 0) clearError(passInput, passErr);
+        });
 
-                    <div class="table-wrapper">
-                        <table class="data-table" id="transactionTable">
-                            <thead>
-                                <tr>
-                                    <th><input type="checkbox" id="checkAll" /></th>
-                                    <th class="sortable" data-col="0">ID Trans <i class="fa-solid fa-sort"></i></th>
-                                    <th class="sortable" data-col="1">Pengguna <i class="fa-solid fa-sort"></i></th>
-                                    <th class="sortable" data-col="2">Produk <i class="fa-solid fa-sort"></i></th>
-                                    <th class="sortable" data-col="3">Jumlah <i class="fa-solid fa-sort"></i></th>
-                                    <th class="sortable" data-col="4">Status <i class="fa-solid fa-sort"></i></th>
-                                    <th class="sortable" data-col="5">Tanggal <i class="fa-solid fa-sort"></i></th>
-                                    <th>Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tableBody">
-                                <!-- JS akan mengisi ini -->
-                            </tbody>
-                        </table>
-                    </div>
+        form.addEventListener('submit', function (e) {
+            let valid = true;
 
-                    <div class="table-footer">
-                        <span class="table-info" id="tableInfo">Menampilkan 1–10 dari 50 data</span>
-                        <div class="pagination" id="pagination"></div>
-                    </div>
-                </div>
-            </section>
+            if (!validateEmail(emailInp.value.trim())) {
+                showError(emailInp, emailErr, 'Masukkan alamat email yang valid.');
+                valid = false;
+            }
+            if (passInput.value.trim() === '') {
+                showError(passInput, passErr, 'Password tidak boleh kosong.');
+                valid = false;
+            }
 
-            <!-- PAGE: USERS -->
-            <section class="page" id="page-users">
-                <div class="page-header">
-                    <div>
-                        <h1 class="page-title">Data User</h1>
-                        <p class="page-subtitle">Kelola seluruh pengguna sistem</p>
-                    </div>
-                    <button class="btn btn-primary"><i class="fa-solid fa-user-plus"></i> Tambah User</button>
-                </div>
-                <div class="card" style="padding:2rem;text-align:center;color:var(--text-muted)">
-                    <i class="fa-solid fa-users" style="font-size:3rem;margin-bottom:1rem;opacity:.3"></i>
-                    <p>Halaman Data User — Konten dapat dikembangkan di sini.</p>
-                </div>
-            </section>
+            if (!valid) { e.preventDefault(); return; }
 
-            <!-- PAGE: REPORTS -->
-            <section class="page" id="page-reports">
-                <div class="page-header">
-                    <div>
-                        <h1 class="page-title">Laporan</h1>
-                        <p class="page-subtitle">Ringkasan dan analitik bisnis</p>
-                    </div>
-                </div>
-                <div class="card" style="padding:2rem;text-align:center;color:var(--text-muted)">
-                    <i class="fa-solid fa-chart-line" style="font-size:3rem;margin-bottom:1rem;opacity:.3"></i>
-                    <p>Halaman Laporan — Konten dapat dikembangkan di sini.</p>
-                </div>
-            </section>
-
-            <!-- PAGE: SETTINGS -->
-            <section class="page" id="page-settings">
-                <div class="page-header">
-                    <div>
-                        <h1 class="page-title">Pengaturan</h1>
-                        <p class="page-subtitle">Konfigurasi sistem dan akun</p>
-                    </div>
-                </div>
-                <div class="card" style="padding:2rem;text-align:center;color:var(--text-muted)">
-                    <i class="fa-solid fa-sliders" style="font-size:3rem;margin-bottom:1rem;opacity:.3"></i>
-                    <p>Halaman Pengaturan — Konten dapat dikembangkan di sini.</p>
-                </div>
-            </section>
-
-        </main>
-    </div>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-    <script src="js/script.js"></script>
+            // Show loading state
+            btnLogin.disabled = true;
+            spinner.style.display = 'block';
+            btnIcon.style.display = 'none';
+            btnText.textContent = 'Memverifikasi…';
+        });
+    </script>
 </body>
 
 </html>

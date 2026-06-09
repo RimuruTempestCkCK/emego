@@ -130,6 +130,11 @@ function statusLabel(string $s): string {
     <link rel="stylesheet" href="../css/style.css" />
 
     <style>
+        :root {
+            --primary-color: #6366f1;
+            --border-color: #e2e8f0;
+        }
+
         /* ── Modal ── */
         #modalBackdrop {
             display: none;
@@ -228,11 +233,26 @@ function statusLabel(string $s): string {
             border-radius:8px; border:1px solid var(--border-color);
             flex-shrink:0;
         }
-        .total-row {
+        /* .total-row {
             display: flex; justify-content: space-between; align-items: center;
             padding: .85rem 1rem;
             background: var(--primary-color);
             color: #fff; font-weight:600;
+        } */
+
+        .total-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: .85rem 1rem;
+            background: #6366f1 !important;
+            color: #ffffff !important;
+            font-weight: 600;
+            font-size: .95rem;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+        .total-row span {
+            color: #ffffff !important;
+            opacity: 1 !important;
         }
 
         /* ── Status timeline ── */
@@ -376,14 +396,21 @@ function statusLabel(string $s): string {
                     </div>
 
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-outline" id="btnTutupModal2"
+                        <!-- <button type="button" class="btn btn-outline" id="btnTutupModal2"
                             style="display:flex;align-items:center;gap:.5rem;padding:.75rem 1.5rem">
                             <i class="fa-solid fa-xmark"></i> Tutup
-                        </button>
+                        </button> -->
                         <?php if ($detailTrx['status'] === 'pending'): ?>
                         <span style="font-size:.8rem;color:var(--text-muted);align-self:center">
                             <i class="fa-solid fa-clock"></i> Menunggu konfirmasi admin…
                         </span>
+                        <?php elseif ($detailTrx['status'] === 'divalidasi'): ?>
+                            <a href="invoice.php?id=<?= $detailTrx['id'] ?>" 
+                            target="_blank"
+                            class="btn"
+                            style="display:flex;align-items:center;gap:.5rem;padding:.75rem 1.5rem;background:var(--primary-color);color:white;border:none;border-radius:8px;text-decoration:none;font-weight:600;cursor:pointer">
+                                <i class="fa-solid fa-file-pdf"></i> Lihat Invoice
+                            </a>
                         <?php endif; ?>
                     </div>
 

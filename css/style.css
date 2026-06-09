@@ -40,6 +40,13 @@
   --radius-lg: 16px;
   --radius-xl: 20px;
 
+  /* Brand Colors */
+  --primary-color: #6366f1;
+  --primary-hover: #4f46e5;
+  --border-color:  var(--gray-200);
+  --card-bg:       var(--surface);
+  --input-bg:      var(--surface-2);
+
   /* Light Theme (default) */
   --bg:          var(--gray-50);
   --surface:     #ffffff;
@@ -237,7 +244,6 @@ ul { list-style: none; }
   gap: 10px;
   padding: 10px 10px;
   border-radius: var(--radius-sm);
-  cursor: pointer;
   transition: background .2s;
 }
 
@@ -267,6 +273,22 @@ ul { list-style: none; }
 .sidebar-user > i {
   color: var(--gray-500);
   font-size: 13px;
+}
+
+.logout-btn {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-sm);
+  color: var(--gray-500);
+  transition: all .2s;
+  cursor: pointer;
+}
+
+.logout-btn:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--danger);
 }
 
 /* ============================================

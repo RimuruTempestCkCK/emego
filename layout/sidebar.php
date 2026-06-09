@@ -157,7 +157,9 @@ $current = basename($_SERVER['PHP_SELF']);
                 <span class="user-name"><?= $_SESSION['user_name'] ?? 'User' ?></span>
                 <span class="user-role"><?= ucfirst($role) ?></span>
             </div>
-            <i class="fa-solid fa-ellipsis-vertical"></i>
+            <a href="../logout.php" class="logout-btn" title="Keluar">
+                <i class="fa-solid fa-arrow-right-from-bracket"></i>
+            </a>
         </div>
     </div>
 </aside>
